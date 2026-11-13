@@ -1,0 +1,15 @@
+model:
+  provider: custom:gateway
+  default: REPLACE_WITH_PROVIDER_MODEL_ID
+
+providers:
+  gateway:
+    api: https://api.example.com/v1
+    key_env: AGENT_API_KEY
+    transport: chat_completions
+
+webapp:
+  enabled: true
+  host: 0.0.0.0
+  port: 9120
+  public_url: http://localhost:9120

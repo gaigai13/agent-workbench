@@ -1,0 +1,17 @@
+services:
+  agent:
+    image: nousresearch/hermes-agent:latest
+    container_name: agent-workbench
+    command: ["gateway", "run"]
+    restart: unless-stopped
+    environment:
+      HERMES_DASHBOARD: "1"
+      AGENT_API_KEY: ${AGENT_API_KEY:?Set AGENT_API_KEY in .env}
+      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Set HERMES_DASHBOARD_BASIC_AUTH_USERNAME in .env}
+      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?Set HERMES_DASHBOARD_BASIC_AUTH_PASSWORD in .env}
+      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?Set HERMES_DASHBOARD_BASIC_AUTH_SECRET in .env}
+    ports:
+      - "127.0.0.1:9119:9119"
+      - "127.0.0.1:9120:9120"
+    volumes:
+      - ./data:/opt/data
