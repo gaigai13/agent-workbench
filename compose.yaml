@@ -1,17 +1,21 @@
 services:
-  agent:
-    image: nousresearch/hermes-agent:latest
-    container_name: agent-workbench
-    command: ["gateway", "run"]
+  hermes:
+    image: nousresearch/hermes-agent@sha256:276d44685c65c0cb2a25f190b63c65c8906f9dc76486fb1c05ae71b5826bda08
+    container_name: hermes-agent
     restart: unless-stopped
+    command: ["gateway", "run"]
+    env_file:
+      - .env
     environment:
+      HERMES_HOME: /opt/data
       HERMES_DASHBOARD: "1"
-      AGENT_API_KEY: ${AGENT_API_KEY:?Set AGENT_API_KEY in .env}
-      HERMES_DASHBOARD_BASIC_AUTH_USERNAME: ${HERMES_DASHBOARD_BASIC_AUTH_USERNAME:?Set HERMES_DASHBOARD_BASIC_AUTH_USERNAME in .env}
-      HERMES_DASHBOARD_BASIC_AUTH_PASSWORD: ${HERMES_DASHBOARD_BASIC_AUTH_PASSWORD:?Set HERMES_DASHBOARD_BASIC_AUTH_PASSWORD in .env}
-      HERMES_DASHBOARD_BASIC_AUTH_SECRET: ${HERMES_DASHBOARD_BASIC_AUTH_SECRET:?Set HERMES_DASHBOARD_BASIC_AUTH_SECRET in .env}
-    ports:
-      - "127.0.0.1:9119:9119"
-      - "127.0.0.1:9120:9120"
+      HERMES_DASHBOARD_HOST: 0.0.0.0
+      HERMES_DASHBOARD_PORT: "9119"
+      API_SERVER_ENABLED: "true"
+      API_SERVER_HOST: 127.0.0.1
     volumes:
       - ./data:/opt/data
+    ports:
+      - "127.0.0.1:9119:9119"
+    mem_limit: 1g
+    cpus: 1.0
