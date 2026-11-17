@@ -1,0 +1,8 @@
+.env
+.env.*
+data/
+workspace/
+tests/
+__pycache__/
+.pytest_cache/
+.git/

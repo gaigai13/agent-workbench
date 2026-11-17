@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f6fb">
+  <title>AI 编程工作台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Agent Workbench 首页">
+        <span class="brand-mark">A</span>
+        <span><strong>AI 编程工作台</strong><small>服务器后台任务助手</small></span>
+      </a>
+      <div id="top-actions" class="top-actions" hidden>
+        <span id="model-badge" class="badge">正在检查…</span>
+        <button id="logout" class="button button-quiet" type="button">退出</button>
+      </div>
+    </header>
+
+    <section id="login-panel" class="login-wrap" hidden>
+      <div class="login-card">
+        <span class="eyebrow">私人工作区</span>
+        <h1>登录你的工作台</h1>
+        <p>输入服务器上设置的工作台密码。任务会在服务器后台继续运行。</p>
+        <form id="login-form">
+          <label for="password">工作台密码</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="256" placeholder="输入密码">
+          <button class="button button-primary full" type="submit">登录</button>
+          <div id="login-error" class="error-text" role="alert"></div>
+        </form>
+        <div class="secure-note"><span aria-hidden="true">●</span> 页面仅供授权用户使用</div>
+      </div>
+    </section>
+
+    <section id="workspace-panel" hidden>
+      <div class="welcome-row">
+        <div><span class="eyebrow">开始一个新任务</span><h1>把目标交给 AI 助手</h1>
+          <p class="muted">描述你要完成的事情。提交后可关闭页面，服务器会继续执行并保存日志。</p></div>
+      </div>
+      <div id="config-warning" class="notice notice-warning" hidden>
+        <strong>模型 API 尚未配置</strong><span>请在服务器的 <code>agent-ui/.env</code> 设置 Cicadas API Key，然后重启服务。</span>
+      </div>
+      <form id="task-form" class="composer">
+        <label for="prompt">任务说明</label>
+        <textarea id="prompt" name="prompt" rows="5" maxlength="8000" placeholder="例如：先检查工作区现有项目，为登录页面补上移动端布局，并运行相关测试。" required></textarea>
+        <p class="composer-hint">项目文件会保存在服务器；测试命令在隔离临时副本中运行，命令生成的文件不会自动保存。</p>
+        <div class="composer-footer">
+          <span id="char-count" class="muted small">0 / 8000</span>
+          <button id="submit-task" class="button button-primary" type="submit"><span>提交任务</span><span aria-hidden="true">↗</span></button>
+        </div>
+        <div id="task-error" class="error-text" role="alert"></div>
+      </form>
+
+      <div class="content-grid">
+        <section class="task-list-card">
+          <div class="section-heading"><div><h2>任务列表</h2><p>最近 50 个任务</p></div><button id="refresh" class="button button-quiet" type="button" aria-label="刷新任务列表">刷新</button></div>
+          <div id="tasks" class="tasks-list"><div class="empty-state">还没有任务，先提交一个试试。</div></div>
+        </section>
+        <section class="detail-card">
+          <div id="detail-empty" class="detail-empty"><div class="empty-icon">✦</div><h2>任务详情</h2><p>从左侧选择一个任务，查看进度和执行记录。</p></div>
+          <div id="detail" hidden>
+            <div class="section-heading detail-heading"><div><span class="eyebrow">任务详情</span><h2 id="detail-title">—</h2></div><button id="cancel-task" class="button button-danger" type="button" hidden>停止任务</button></div>
+            <div id="detail-status" class="status-line"></div>
+            <div id="task-output" class="final-output" hidden></div>
+            <h3 class="log-title">执行记录</h3>
+            <div id="events" class="events" aria-live="polite"></div>
+          </div>
+        </section>
+      </div>
+      <footer class="footnote">工作区与任务记录保存在服务器 Docker volume 中。执行命令在无网络的隔离容器内运行。</footer>
+    </section>
+  </main>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

@@ -1,6 +1,64 @@
 # Agent Workbench
 
-基于 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的自托管部署配置。仓库内容根据一套实际运行配置整理，提供可复用的 Docker Compose、环境变量和模型配置示例；不包含 Hermes 上游源码，也不包含服务器运行数据。
+一个面向手机浏览器的中文自托管 AI 编程工作台。提交任务后，由服务器后台 Agent 调用 OpenAI-compatible 模型 API，在隔离项目工作区中查看和修改文件、运行命令并保存执行记录；关闭浏览器不会中断已提交任务。
+
+另保留原有 Hermes Agent 部署模板，位于仓库根目录的 Compose 配置中。自研中文任务工作台位于 `agent-ui/`，两者可以独立部署。
+
+## 中文任务工作台
+
+### 首次配置
+
+```bash
+cd agent-ui
+cp .env.example .env
+```
+
+编辑 `.env`，设置两个不同的随机值及 Cicadas API Key：
+
+```bash
+sed -i "s|^APP_PASSWORD=.*|APP_PASSWORD=$(openssl rand -hex 24)|; s|^APP_SECRET=.*|APP_SECRET=$(openssl rand -hex 32)|" .env
+nano .env
+```
+
+保存生成的 `APP_PASSWORD` 作为登录密码，然后在 `.env` 中设置 `CICADAS_API_KEY`，并确认 `API_BASE_URL`、`MODEL` 是服务商支持的地址和模型 ID。密钥只放在服务器 `.env`，不会发送到浏览器或任务执行容器。
+
+启动：
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs --tail=100 app runner
+```
+
+工作台仅监听服务器本机 `127.0.0.1:9121`。从电脑访问时，在本机建立 SSH 隧道：
+
+```bash
+ssh -N -L 9121:127.0.0.1:9121 root@YOUR_SERVER_IP
+```
+
+然后打开 `http://127.0.0.1:9121`。手机可通过支持 SSH 本地端口转发的客户端建立同样的隧道，再在手机浏览器打开本地地址。若要不经隧道直接公网访问，需先配置有效域名、HTTPS 和反向代理；不要将应用端口直接绑定到公网。
+
+修改 `.env` 中的模型 Key 或模型 ID 后，在 `agent-ui/` 目录执行 `docker compose up -d --force-recreate app` 使配置生效。
+
+### 功能与边界
+
+- 中文登录页、任务提交、任务队列、状态刷新、停止任务、事件日志及结果展示。
+- SQLite 和工作区使用 Docker named volume 持久化；服务重启后排队任务会继续处理，正在运行的任务会标记为中断，文件改动保留。
+- 单 Worker 串行执行；每个任务最多 18 轮模型调用，最长 30 分钟。
+- 排队最多 20 个任务；保留最近 200 个已结束任务及每个任务最近 100 条事件，控制长期运行时的磁盘占用。
+- 工作区最大 128 MB，单文件写入最大 40 KB。项目命令在单独的无网络容器内、256 MB 临时副本中以非 root UID 执行；每次命令使用独立的临时 `HOME` / `TMPDIR`，容器禁止子进程切换进程组，命令结束后清理整个进程组，命令生成的文件不保留。Runner 只保留启动降权进程、清理临时目录和终止子进程所需的能力，容器使用只读根文件系统和资源上限，不挂载 Docker socket，也不包含模型 API Key。
+- 模型调用使用 Cicadas OpenAI-compatible `/chat/completions` API。需确认账户实际提供所填的模型 ID；仓库默认值仅作示例。
+
+### 更新与备份
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+`docker compose down` 不会删除 named volumes。保留好 `agent_data`、`agent_workspace` 两个 volume 的备份；不要运行 `docker compose down -v`，否则会删除任务记录和工作区。
+
+## Hermes Agent 部署模板
 
 ## 部署内容
 

@@ -1,0 +1,74 @@
+services:
+  init-volumes:
+    image: alpine:3.21
+    user: "0:0"
+    command: ["sh", "-c", "mkdir -p /data /workspace /run/agent && chown 10001:10001 /data /workspace /run/agent && chmod 700 /data && chmod 750 /workspace && chmod 770 /run/agent"]
+    volumes:
+      - agent_data:/data
+      - agent_workspace:/workspace
+      - agent_socket:/run/agent
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agent-workbench-ui
+    user: "10001:10001"
+    init: true
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/agent.db
+      WORKSPACE_PATH: /workspace
+      RUNNER_SOCKET: /run/agent/runner.sock
+    depends_on:
+      init-volumes:
+        condition: service_completed_successfully
+      runner:
+        condition: service_started
+    ports:
+      - "127.0.0.1:${APP_PORT:-9121}:8000"
+    volumes:
+      - agent_data:/data
+      - agent_workspace:/workspace
+      - agent_socket:/run/agent
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,noexec,nosuid
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 0.75
+    pids_limit: 128
+
+  runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.runner
+    container_name: agent-workbench-runner
+    user: "0:10001" # Runner only; command subprocesses drop to UID/GID 10002.
+    init: true
+    restart: unless-stopped
+    network_mode: none
+    depends_on:
+      init-volumes:
+        condition: service_completed_successfully
+    volumes:
+      - agent_workspace:/workspace:ro
+      - agent_socket:/run/agent
+    read_only: true
+    tmpfs:
+      - /run/scratch:size=256m,mode=0755,nosuid,nodev
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, CHOWN, DAC_OVERRIDE, KILL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    cpus: 0.75
+    pids_limit: 128
+
+volumes:
+  agent_data:
+  agent_workspace:
+  agent_socket:
