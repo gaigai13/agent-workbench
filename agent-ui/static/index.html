@@ -38,15 +38,45 @@
     <section id="workspace-panel" hidden>
       <div class="welcome-row">
         <div><span class="eyebrow">开始一个新任务</span><h1>把目标交给 AI 助手</h1>
-          <p class="muted">描述你要完成的事情。提交后可关闭页面，服务器会继续执行并保存日志。</p></div>
+          <p class="muted">写清目标、验收标准和必要上下文。提交后可关闭页面，服务器会继续执行并保存记录。</p></div>
       </div>
       <div id="config-warning" class="notice notice-warning" hidden>
         <strong>模型 API 尚未配置</strong><span>请在服务器的 <code>agent-ui/.env</code> 设置 Cicadas API Key，然后重启服务。</span>
       </div>
+      <section class="composer upgrade-composer">
+        <div class="section-heading"><div><span class="eyebrow">自主升级</span><h2>让 Agent 自己选一项改进并做到待验收</h2></div><span class="badge">每次只运行一轮</span></div>
+        <p class="muted upgrade-intro">Agent 会检查项目和测试、搜索公开资料、自己决定改进方向，并在隔离候选区实施和验证。你始终控制授权、预算与最终合入。</p>
+        <div id="upgrade-search-warning" class="notice notice-warning" hidden><strong>升级搜索未配置</strong><span>需要在服务器 <code>agent-ui/.env</code> 配置独立的 <code>TAVILY_API_KEY</code>；它与模型 API Key 分开。</span></div>
+        <form id="upgrade-form">
+          <label for="upgrade-goal">长期目标 / 本轮重点</label>
+          <textarea id="upgrade-goal" rows="2" maxlength="8000">提高复杂任务的可靠交付能力，同时维持安全边界、可恢复性和 Token/服务器资源效率。</textarea>
+          <div class="upgrade-fields">
+            <div><label for="upgrade-budget">Token 预算上限（保守预留/服务商用量）</label><input id="upgrade-budget" type="number" min="1000" max="100000" step="1000" value="20000" required></div>
+            <div><label for="upgrade-model-calls">模型调用上限</label><input id="upgrade-model-calls" type="number" min="1" max="12" value="8" required></div>
+            <div><label for="upgrade-search-calls">搜索次数上限</label><input id="upgrade-search-calls" type="number" min="1" max="5" value="5" required></div>
+            <div><label for="upgrade-reasoning">推理强度</label><select id="upgrade-reasoning"><option value="default">默认</option><option value="low">低</option><option value="medium">中</option><option value="high">高</option></select></div>
+          </div>
+          <div class="upgrade-charter"><strong>固定边界</strong><span>允许：检查、公开搜索、选择一项改进、修改候选区、隔离测试。</span><span>需你批准：新依赖/大版本、数据库迁移、外部服务、认证/网络/安全边界改变。</span><span>禁止：读密钥、改预算或授权、自动合入、Push、生产部署、删除正式数据。</span></div>
+          <div class="composer-footer"><span class="muted small">完成后停在「待你验收」，不会自动开始下一轮。</span><button id="start-upgrade" class="button button-primary" type="submit">开始一轮升级 ↗</button></div>
+          <div id="upgrade-error" class="error-text" role="alert"></div>
+        </form>
+      </section>
+
       <form id="task-form" class="composer">
-        <label for="prompt">任务说明</label>
-        <textarea id="prompt" name="prompt" rows="5" maxlength="8000" placeholder="例如：先检查工作区现有项目，为登录页面补上移动端布局，并运行相关测试。" required></textarea>
-        <p class="composer-hint">项目文件会保存在服务器；测试命令在隔离临时副本中运行，命令生成的文件不会自动保存。</p>
+        <label for="goal">任务目标</label>
+        <textarea id="goal" name="goal" rows="3" maxlength="8000" placeholder="要解决什么问题？期望交付什么？" required></textarea>
+        <label for="acceptance-criteria">验收标准</label>
+        <textarea id="acceptance-criteria" name="acceptance-criteria" rows="3" maxlength="4000" placeholder="逐条写清楚怎样才算完成；可一行一条。" required></textarea>
+        <label for="task-context-input">上下文（可选）</label>
+        <textarea id="task-context-input" name="task-context" rows="2" maxlength="4000" placeholder="相关文件、背景、约束、复现步骤……"></textarea>
+        <label for="reasoning-effort">推理强度</label>
+        <select id="reasoning-effort" name="reasoning-effort">
+          <option value="default">默认（由中转站决定）</option>
+          <option value="low">低</option>
+          <option value="medium">中</option>
+          <option value="high">高</option>
+        </select>
+        <p class="composer-hint">权限范围固定：Agent 先在独立候选副本中读写和测试；通过人工验收后才合入正式工作区。命令无网络，Agent 不能直接发布。</p>
         <div class="composer-footer">
           <span id="char-count" class="muted small">0 / 8000</span>
           <button id="submit-task" class="button button-primary" type="submit"><span>提交任务</span><span aria-hidden="true">↗</span></button>
@@ -64,7 +94,38 @@
           <div id="detail" hidden>
             <div class="section-heading detail-heading"><div><span class="eyebrow">任务详情</span><h2 id="detail-title">—</h2></div><button id="cancel-task" class="button button-danger" type="button" hidden>停止任务</button></div>
             <div id="detail-status" class="status-line"></div>
+            <section id="upgrade-detail" class="upgrade-detail" hidden>
+              <div class="upgrade-detail-heading"><h3>自主升级控制台</h3><div class="upgrade-actions"><button id="pause-upgrade" class="button button-quiet" type="button" hidden>安全暂停</button><button id="resume-upgrade" class="button button-primary" type="button" hidden>继续升级</button><button id="authorize-upgrade" class="button button-primary" type="button" hidden>批准本次动作</button><button id="discard-upgrade" class="button button-danger" type="button" hidden>放弃本轮</button></div></div>
+              <p id="upgrade-summary" class="upgrade-summary"></p>
+              <div id="owner-request" class="owner-request" hidden></div>
+              <section><h4>联网调研来源</h4><div id="upgrade-sources" class="upgrade-sources"><p class="muted small">本轮还没有已保存来源。</p></div></section>
+            </section>
+            <div class="task-contract">
+              <section><h3>目标</h3><p id="task-goal"></p></section>
+              <section><h3>验收标准</h3><p id="task-criteria"></p></section>
+              <section id="task-context-section" hidden><h3>上下文</h3><p id="task-context"></p></section>
+              <section><h3>执行权限</h3><p>Agent 在独立候选副本读写和测试；人工验收通过后才合入正式工作区。命令无网络，不允许自动发布。</p></section>
+            </div>
+            <h3 id="task-output-title" class="log-title" hidden>Agent 候选结果（未验收）</h3>
             <div id="task-output" class="final-output" hidden></div>
+            <section id="review-panel" class="review-panel" hidden>
+              <h3>人工验收</h3>
+              <p>候选改动尚未进入正式工作区。先检查差异和验证记录，再通过或退回。</p>
+              <div class="candidate-diff">
+                <h4>候选文件差异</h4>
+                <div id="candidate-changes"><p class="diff-empty">正在读取候选文件差异……</p></div>
+              </div>
+              <label id="full-diff-ack-row" class="full-diff-ack" hidden>
+                <input id="full-diff-ack" type="checkbox">
+                我已下载并检查所有被截断文件的完整差异
+              </label>
+              <label for="review-note">退回意见</label>
+              <textarea id="review-note" rows="2" maxlength="2000" placeholder="指出未满足的验收项；通过时可留空。"></textarea>
+              <div class="review-actions">
+                <button id="request-changes" class="button button-quiet" type="button">退回修改</button>
+                <button id="approve-task" class="button button-primary" type="button" disabled>通过并完成</button>
+              </div>
+            </section>
             <h3 class="log-title">执行记录</h3>
             <div id="events" class="events" aria-live="polite"></div>
           </div>

@@ -2,10 +2,11 @@ services:
   init-volumes:
     image: alpine:3.21
     user: "0:0"
-    command: ["sh", "-c", "mkdir -p /data /workspace /run/agent && chown 10001:10001 /data /workspace /run/agent && chmod 700 /data && chmod 750 /workspace && chmod 770 /run/agent"]
+    command: ["sh", "-c", "mkdir -p /data /workspace /candidates /run/agent && chown 10001:10001 /data /workspace /candidates /run/agent && chmod 700 /data /candidates && chmod 750 /workspace && chmod 770 /run/agent"]
     volumes:
       - agent_data:/data
       - agent_workspace:/workspace
+      - agent_candidates:/candidates
       - agent_socket:/run/agent
     restart: "no"
 
@@ -22,6 +23,7 @@ services:
     environment:
       DATABASE_PATH: /data/agent.db
       WORKSPACE_PATH: /workspace
+      CANDIDATE_PATH: /candidates
       RUNNER_SOCKET: /run/agent/runner.sock
     depends_on:
       init-volumes:
@@ -33,6 +35,7 @@ services:
     volumes:
       - agent_data:/data
       - agent_workspace:/workspace
+      - agent_candidates:/candidates
       - agent_socket:/run/agent
     read_only: true
     tmpfs:
@@ -55,8 +58,10 @@ services:
     depends_on:
       init-volumes:
         condition: service_completed_successfully
+    environment:
+      CANDIDATE_PATH: /candidates
     volumes:
-      - agent_workspace:/workspace:ro
+      - agent_candidates:/candidates:ro
       - agent_socket:/run/agent
     read_only: true
     tmpfs:
@@ -71,4 +76,5 @@ services:
 volumes:
   agent_data:
   agent_workspace:
+  agent_candidates:
   agent_socket:

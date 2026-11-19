@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101b32">
+  <title>晶体突围 · Agent Workbench 演示</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./src/app.js"></script>
+</head>
+<body>
+  <main class="page">
+    <header class="intro">
+      <p class="eyebrow">Agent Workbench · 游戏任务样例</p>
+      <h1>晶体突围</h1>
+      <p>收集 5 颗晶体，在 60 秒内完成挑战。冲刺期间可以穿过巡逻障碍。</p>
+    </header>
+
+    <section class="game-card" aria-label="晶体突围游戏">
+      <div class="hud">
+        <div><span>时间</span><strong id="time-left">01:00</strong></div>
+        <div><span>晶体</span><strong id="crystal-count">0 / 5</strong></div>
+        <div><span>冲刺</span><strong id="dash-status">就绪 · Space</strong></div>
+        <button id="reset-button" class="button button-quiet" type="button">重置</button>
+      </div>
+      <canvas id="game-canvas" width="720" height="440" aria-label="游戏区域"></canvas>
+      <p id="game-status" class="game-status" aria-live="polite"></p>
+      <div class="game-actions">
+        <button id="start-button" class="button button-primary" type="button">开始游戏</button>
+      </div>
+      <div class="touch-controls" aria-label="触屏方向控制">
+        <span></span><button type="button" data-direction="up" aria-label="向上">▲</button><span></span>
+        <button type="button" data-direction="left" aria-label="向左">◀</button>
+        <button type="button" data-direction="down" aria-label="向下">▼</button>
+        <button type="button" data-direction="right" aria-label="向右">▶</button>
+      </div>
+      <div class="dash-controls"><button id="dash-button" class="button button-dash" type="button" aria-label="冲刺">冲刺</button></div>
+    </section>
+    <footer>移动端使用屏幕方向键与冲刺按钮；电脑使用 WASD / 方向键移动，按 Space 冲刺。收集全部 5 颗晶体获胜。</footer>
+  </main>
+</body>
+</html>
